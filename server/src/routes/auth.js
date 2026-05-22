@@ -46,6 +46,53 @@ router.get('/me', protect, (req, res) => {
   res.json({ user: mapDoc(req.user) })
 })
 
+router.post('/change-password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        message: 'Current password, new password, and confirmation are required',
+      })
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: 'New password must be at least 6 characters',
+      })
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message: 'New password and confirmation do not match',
+      })
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        message: 'New password must be different from your current password',
+      })
+    }
+
+    const user = await User.findById(req.user._id).select('+password')
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    if (!(await user.comparePassword(currentPassword))) {
+      return res.status(401).json({ message: 'Current password is incorrect' })
+    }
+
+    user.password = newPassword
+    await user.save()
+
+    res.json({ message: 'Password updated successfully' })
+  } catch (err) {
+    console.error('Change password error:', err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
 router.post('/logout', protect, async (req, res) => {
   try {
     const token = req.authToken

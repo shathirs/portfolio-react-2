@@ -3,8 +3,10 @@ import type { FormEvent } from 'react'
 import { ExternalLink, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { PasswordInput } from '@/components/ui/PasswordInput'
 import { PageError, PageLoader } from '@/components/ui/PageLoader'
 import { useProfile } from '@/context/ProfileContext'
+import { ApiError, api } from '@/lib/api'
 import { resolveProfileImageUrl } from '@/lib/profileImage'
 import type { SiteProfile } from '@/types'
 
@@ -15,6 +17,17 @@ export function Profile() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordErrors, setPasswordErrors] = useState<{
+    currentPassword?: string
+    newPassword?: string
+    confirmPassword?: string
+    form?: string
+  }>({})
+  const [passwordFeedback, setPasswordFeedback] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -39,6 +52,54 @@ export function Profile() {
       setFeedback('Failed to save profile.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  function validatePasswordForm() {
+    const next: typeof passwordErrors = {}
+
+    if (!currentPassword) {
+      next.currentPassword = 'Current password is required'
+    }
+    if (!newPassword) {
+      next.newPassword = 'New password is required'
+    } else if (newPassword.length < 6) {
+      next.newPassword = 'Password must be at least 6 characters'
+    }
+    if (!confirmPassword) {
+      next.confirmPassword = 'Please confirm your new password'
+    } else if (newPassword && newPassword !== confirmPassword) {
+      next.confirmPassword = 'Passwords do not match'
+    }
+
+    setPasswordErrors(next)
+    return Object.keys(next).length === 0
+  }
+
+  async function handlePasswordSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!validatePasswordForm()) return
+
+    setChangingPassword(true)
+    setPasswordErrors({})
+    setPasswordFeedback('')
+
+    try {
+      const result = await api.changePassword({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      })
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setPasswordFeedback(result.message)
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to update password.'
+      setPasswordErrors({ form: message })
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -194,6 +255,62 @@ export function Profile() {
           </Button>
         </div>
       </form>
+
+      <div className="space-y-5 rounded-xl border border-border bg-white p-6 shadow-sm">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Reset password</h2>
+          <p className="mt-1 text-sm text-muted">
+            Updates your admin login password in MongoDB (stored hashed). You will
+            need the new password on your next sign-in.
+          </p>
+        </div>
+
+        <form onSubmit={handlePasswordSubmit} className="space-y-5" noValidate>
+          {passwordErrors.form ? (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              {passwordErrors.form}
+            </p>
+          ) : null}
+
+          <PasswordInput
+            id="current-password"
+            label="Current password"
+            value={currentPassword}
+            onChange={setCurrentPassword}
+            autoComplete="current-password"
+            error={passwordErrors.currentPassword}
+          />
+
+          <PasswordInput
+            id="new-password"
+            label="New password"
+            value={newPassword}
+            onChange={setNewPassword}
+            placeholder="At least 6 characters"
+            autoComplete="new-password"
+            error={passwordErrors.newPassword}
+          />
+
+          <PasswordInput
+            id="confirm-password"
+            label="Confirm new password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            autoComplete="new-password"
+            error={passwordErrors.confirmPassword}
+          />
+
+          {passwordFeedback ? (
+            <p className="text-sm text-emerald-600">{passwordFeedback}</p>
+          ) : null}
+
+          <div className="flex justify-end">
+            <Button type="submit" variant="secondary" disabled={changingPassword}>
+              {changingPassword ? 'Updating…' : 'Update password'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

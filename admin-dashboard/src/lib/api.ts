@@ -59,6 +59,16 @@ export const api = {
 
   logout: () => request<{ message: string }>('/auth/logout', { method: 'POST' }),
 
+  changePassword: (body: {
+    currentPassword: string
+    newPassword: string
+    confirmPassword: string
+  }) =>
+    request<{ message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   getProjects: () => request<import('@/types').Project[]>('/projects'),
 
   getProject: (id: string) =>

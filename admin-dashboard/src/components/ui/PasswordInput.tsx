@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 interface PasswordInputProps {
   label?: string
+  id?: string
   value: string
   onChange: (value: string) => void
   placeholder?: string
@@ -12,6 +13,7 @@ interface PasswordInputProps {
 
 export function PasswordInput({
   label = 'Password',
+  id,
   value,
   onChange,
   placeholder = 'Enter your password',
@@ -19,7 +21,7 @@ export function PasswordInput({
   autoComplete = 'current-password',
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false)
-  const inputId = 'password'
+  const inputId = id ?? label.toLowerCase().replace(/\s+/g, '-')
 
   return (
     <div className="w-full">
