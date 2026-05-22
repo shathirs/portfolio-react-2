@@ -1,103 +1,243 @@
 # Portfo. — MERN Portfolio Stack
 
-| Folder | Description |
-|--------|-------------|
-| `portfolio-site/` | Public portfolio website (React + Tailwind) |
-| `admin-dashboard/` | React admin UI (Vite + TypeScript + Tailwind) |
-| `server/` | Express REST API + MongoDB |
+A full-stack portfolio you can manage yourself: a public site for visitors, an admin dashboard to edit content, and an Express API backed by MongoDB.
 
-## Quick start
+| Folder | What it is |
+|--------|------------|
+| `portfolio-site/` | Public portfolio (React + Vite + Tailwind) |
+| `admin-dashboard/` | Admin panel to manage projects, skills, messages, and more |
+| `server/` | REST API, file uploads, JWT auth, AI features |
 
-### 1. MongoDB
+---
 
-Install and start MongoDB locally, or set `MONGODB_URI` in `server/.env` to a MongoDB Atlas connection string.
+## Before you start
 
-### 2. Backend
+You will need:
+
+- **Node.js** 18+ (20+ recommended)
+- **npm** (comes with Node)
+- **MongoDB** — either installed locally, or a free cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+
+During development you run **three processes** (API + two frontends). Each needs its own terminal window or tab.
+
+---
+
+## Setup
+
+### 1. Clone and open the project
+
+```bash
+git clone <your-repo-url>
+cd portfolio
+```
+
+### 2. Configure the backend
 
 ```bash
 cd server
 cp .env.example .env
-npm install
-npm run seed
-npm run dev
 ```
 
-API: http://localhost:5000
+Open `server/.env` and set at least the **required** variables listed below (especially `MONGODB_URI`, `JWT_SECRET`, and your admin login).
 
-### 3. Public portfolio
+Install dependencies:
+
+```bash
+npm install
+```
+
+Seed the database with sample content and your admin user (password is stored **hashed** in MongoDB):
+
+```bash
+npm run seed
+```
+
+> **Note:** `npm run seed` clears existing data and recreates it. Use it for a fresh start, not on a production database you want to keep.
+
+### 3. Install the frontends
+
+From the project root:
 
 ```bash
 cd portfolio-site
 npm install
+
+cd ../admin-dashboard
+npm install
+```
+
+The portfolio site and admin app work out of the box in dev mode — they proxy API requests to `http://localhost:5000`. You usually **do not** need a `.env` file in the frontends unless you point them at a remote API (see [Frontend environment variables](#frontend-environment-variables-optional)).
+
+---
+
+## Environment variables
+
+### Backend (`server/.env`)
+
+Copy from `server/.env.example`. Never commit `.env` to git.
+
+#### Required
+
+| Variable | Description |
+|----------|-------------|
+| `MONGODB_URI` | MongoDB connection string. Local example: `mongodb://127.0.0.1:27017/portfolio`. For Atlas, use the connection string from the Atlas dashboard. |
+| `JWT_SECRET` | A long random string used to sign login tokens. Use something strong in production — not the placeholder from the example file. |
+| `ADMIN_USERNAME` | Username for admin login (stored in MongoDB). |
+| `ADMIN_EMAIL` | Admin email (stored in MongoDB). |
+| `ADMIN_PASSWORD` | Admin password used when **creating** the user via `npm run seed` or on first server start. After that, change it from **Admin → Profile → Reset password**; login uses the hash in the database. |
+| `ADMIN_NAME` | Display name shown in the admin UI. |
+
+#### Recommended for local development
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `5000` | Port the API listens on. |
+| `JWT_EXPIRES_IN` | `7d` | How long login tokens stay valid (e.g. `7d`, `24h`). |
+| `CLIENT_URL` | `http://localhost:5173,http://localhost:5174` | Comma-separated URLs allowed by CORS — your admin and portfolio dev servers. Add production URLs when you deploy. |
+
+#### Optional — AI (portfolio chat + admin skill suggestions)
+
+Set **one** provider. Restart the server after adding a key.
+
+| Variable | Description |
+|----------|-------------|
+| `GROQ_API_KEY` | [Groq](https://console.groq.com/) API key (default model: `llama-3.1-8b-instant` via `GROQ_MODEL`) |
+| `GEMINI_API_KEY` | Google Gemini key (`GEMINI_MODEL`, e.g. `gemini-2.0-flash`) |
+| `OPENAI_API_KEY` | OpenAI key (`OPENAI_MODEL`, e.g. `gpt-4o-mini`) |
+
+Without an AI key, the portfolio chat and AI skill suggestions are disabled; everything else still works.
+
+#### Optional — default profile on first run
+
+| Variable | Description |
+|----------|-------------|
+| `PROFILE_LINKEDIN_URL` | LinkedIn profile URL used when seeding / creating the site profile |
+| `PROFILE_IMAGE_URL` | Profile photo URL (e.g. copy image address from LinkedIn). You can also set this later in **Admin → Profile**. |
+
+---
+
+### Frontend environment variables (optional)
+
+Both `portfolio-site` and `admin-dashboard` can use a `.env` file. For **local development**, leave `VITE_API_URL` unset — Vite proxies `/api` and `/uploads` to the backend.
+
+| Variable | When to set |
+|----------|-------------|
+| `VITE_API_URL` | Only when the API is on another host (e.g. `https://api.yoursite.com/api`). See `admin-dashboard/.env.example`. |
+
+---
+
+## How to run
+
+Start the **API first**, then the two frontends. Use three terminals.
+
+### Terminal 1 — Backend (API)
+
+```bash
+cd server
 npm run dev
 ```
 
-Portfolio: http://localhost:5174
+- API: **http://localhost:5000**
+- Health check: **http://localhost:5000/api/health**
 
-### 4. Admin dashboard
+For production:
+
+```bash
+npm start
+```
+
+### Terminal 2 — Public portfolio
+
+```bash
+cd portfolio-site
+npm run dev
+```
+
+- Site: **http://localhost:5174**
+
+Production build:
+
+```bash
+npm run build
+npm run preview
+```
+
+### Terminal 3 — Admin dashboard
 
 ```bash
 cd admin-dashboard
-npm install
 npm run dev
 ```
 
-Admin UI: http://localhost:5173
+- Admin: **http://localhost:5173**
 
-### 5. Login
+Production build:
 
-| Email | Password |
-|-------|----------|
-| `admin@portfo.com` | `admin123` |
-
-(Vals from `server/.env` after `npm run seed`)
-
-## Architecture
-
-```
-Portfolio (5174)  --proxy /api-->  Express (5000)  -->  MongoDB
-Admin (5173)      --proxy /api-->  Express (5000)  -->  MongoDB
+```bash
+npm run build
+npm run preview
 ```
 
-Both Vite apps proxy `/api` and `/uploads` to the backend. Set `CLIENT_URL` in `server/.env` to both origins (see `.env.example`).
+### Sign in to the admin
 
-### Public API (no auth)
+Use the credentials from `server/.env` (after `npm run seed`), for example:
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/public/projects` | Published projects |
-| `GET /api/public/projects/:id` | Single project |
-| `GET /api/public/skills` | Skills with proficiency |
-| `GET /api/public/education` | Education timeline |
-| `GET /api/public/certificates` | Published certificates |
-| `POST /api/messages/contact` | Contact form submission |
-| `GET /api/public/chat/status` | Portfolio AI chat availability |
-| `POST /api/public/chat` | Portfolio AI chat (answers from your DB content) |
+| Field | Example (from `.env.example`) |
+|-------|-------------------------------|
+| Username | Value of `ADMIN_USERNAME` |
+| Password | Value of `ADMIN_PASSWORD` (only until you change it in the app) |
 
-Content is managed in the admin dashboard; the portfolio site reads published data automatically.
+You can log in with **username** or **email**.
 
-### Portfolio AI chat
+To change your password while logged in: **Profile → Reset password** (updates the hashed password in MongoDB).
 
-Visitors can click **Ask AI** on the portfolio site. Answers are generated from your profile, projects, skills, education, certificates, and any links stored in the admin (GitHub, LinkedIn, live demos, credential URLs, etc.). Uses the same AI keys as admin skill suggestions (`GROQ_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY` in `server/.env`).
+---
 
-### Messages (contact form)
+## How it fits together
 
-| Action | Endpoint |
-|--------|----------|
-| Portfolio visitor submits form | `POST /api/messages/contact` (public) |
-| Admin inbox | `GET /api/messages` (auth required) |
-| Mark read / delete | `PATCH` / `DELETE /api/messages/:id` |
-
-Messages appear in **Admin → Messages** and on the **Dashboard** under Recent Messages.
-
-**Real-time updates:** while logged into the admin dashboard, the server pushes new messages over SSE (`GET /api/messages/stream`). The inbox, sidebar unread badge, and dashboard stats update without refresh.
-
-### AI skill suggestions (admin)
-
-When adding a skill, the admin can use **AI recommendations** (logo + category + proficiency). Add one API key to `server/.env`:
-
-```env
-GROQ_API_KEY=your_groq_key
+```
+Portfolio site (5174)  ──proxy /api, /uploads──►  Express API (5000)  ──►  MongoDB
+Admin dashboard (5173)   ──proxy /api, /uploads──►  Express API (5000)  ──►  MongoDB
 ```
 
-Or use `GEMINI_API_KEY` or `OPENAI_API_KEY` instead. Restart the server after adding the key.
+- You edit content in the **admin dashboard**.
+- The **portfolio site** reads published data from public API routes.
+- Uploaded images (projects, certificates, profile) are stored under `server/uploads/` and served from the API.
+
+---
+
+## Main features
+
+- **Projects, skills, education, certificates** — full CRUD in the admin; public site shows published items only.
+- **Contact form** — messages land in **Admin → Messages**, with live updates via SSE while you are logged in.
+- **Portfolio AI chat** — visitors can ask questions; answers use your profile and content from the database (needs an AI key in `.env`).
+- **AI skill suggestions** — optional help when adding skills in the admin (same AI keys).
+- **Profile** — one profile for the admin header and the public site (photo, bio, links).
+
+---
+
+## Useful scripts
+
+| Location | Command | Purpose |
+|----------|---------|---------|
+| `server/` | `npm run dev` | API with auto-restart on file changes |
+| `server/` | `npm start` | API (production) |
+| `server/` | `npm run seed` | Reset DB + sample data + admin user |
+| `portfolio-site/` | `npm run dev` | Public site dev server |
+| `portfolio-site/` | `npm run build` | Production build → `dist/` |
+| `admin-dashboard/` | `npm run dev` | Admin dev server |
+| `admin-dashboard/` | `npm run build` | Production build → `dist/` |
+
+---
+
+## Security reminders
+
+- Do not commit `server/.env` or API keys.
+- Use a strong `JWT_SECRET` and `ADMIN_PASSWORD` in production.
+- Change the default admin password after first login via **Profile → Reset password**.
+
+---
+
+## License
+
+Private project — adjust as needed for your own use.
