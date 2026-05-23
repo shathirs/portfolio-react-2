@@ -53,6 +53,7 @@ export interface Certificate {
   issuedDate: string | null
   status: string
   thumbnail: string
+  thumbnailType?: 'image' | 'pdf'
   credentialUrl: string
   order: number
 }

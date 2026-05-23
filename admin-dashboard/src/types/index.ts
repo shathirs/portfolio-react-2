@@ -79,6 +79,8 @@ export type CertificateCategory =
   | 'Professional'
   | 'Other'
 
+export type CertificateMediaType = 'image' | 'pdf'
+
 export interface Certificate {
   id: string
   title: string
@@ -88,6 +90,7 @@ export interface Certificate {
   issuedDate: string | null
   status: CertificateStatus
   thumbnail: string
+  thumbnailType?: CertificateMediaType
   credentialUrl: string
   order: number
   createdAt?: string

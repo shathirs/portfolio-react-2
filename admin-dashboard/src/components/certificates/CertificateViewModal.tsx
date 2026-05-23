@@ -38,6 +38,7 @@ export function CertificateViewModal({
 
         <CertificateThumbnail
           thumbnail={certificate.thumbnail}
+          thumbnailType={certificate.thumbnailType}
           title={certificate.title}
           className="mb-4 h-32 w-full rounded-lg object-cover"
         />

@@ -3,7 +3,7 @@ import { Certificate } from '../models/Certificate.js'
 import { protect } from '../middleware/auth.js'
 import { uploadCertificateImage } from '../middleware/uploadCertificate.js'
 import { mapDoc, mapDocs } from '../utils/mapDoc.js'
-import { normalizeExternalMediaUrl } from '../utils/googleDriveUrl.js'
+import { normalizeCertificateThumbnail } from '../utils/certificateMedia.js'
 
 const router = Router()
 
@@ -14,7 +14,10 @@ function parseCertificateBody(body) {
     category: body.category,
     issuer: body.issuer?.trim(),
     status: body.status,
-    thumbnail: normalizeExternalMediaUrl(body.thumbnail?.trim() ?? '', 'image'),
+    ...normalizeCertificateThumbnail(
+      body.thumbnail?.trim() ?? '',
+      body.thumbnailType,
+    ),
     credentialUrl: body.credentialUrl?.trim() ?? '',
     order: body.order ?? 0,
   }
@@ -31,20 +34,33 @@ function parseCertificateBody(body) {
   return data
 }
 
+function respondCertificateUpload(req, res, err) {
+  if (err) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'File must be smaller than 15MB'
+        : err.message || 'Upload failed'
+    return res.status(400).json({ message })
+  }
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file provided' })
+  }
+  const isPdf =
+    req.file.mimetype === 'application/pdf' ||
+    req.file.filename.toLowerCase().endsWith('.pdf')
+  res.status(201).json({
+    url: `/uploads/certificates/${req.file.filename}`,
+    thumbnailType: isPdf ? 'pdf' : 'image',
+  })
+}
+
 router.post('/upload', protect, (req, res) => {
-  uploadCertificateImage.single('image')(req, res, (err) => {
-    if (err) {
-      const message =
-        err.code === 'LIMIT_FILE_SIZE'
-          ? 'Image must be smaller than 5MB'
-          : err.message || 'Upload failed'
-      return res.status(400).json({ message })
+  uploadCertificateImage.single('file')(req, res, (err) => {
+    if (req.file || err) {
+      return respondCertificateUpload(req, res, err)
     }
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image file provided' })
-    }
-    res.status(201).json({
-      url: `/uploads/certificates/${req.file.filename}`,
+    uploadCertificateImage.single('image')(req, res, (err2) => {
+      respondCertificateUpload(req, res, err2)
     })
   })
 })

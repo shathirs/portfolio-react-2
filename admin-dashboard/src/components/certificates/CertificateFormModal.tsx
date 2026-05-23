@@ -61,7 +61,8 @@ export function CertificateFormModal({
       (thumb.includes('hyperstack.id/credential') ||
         (thumb.includes('/credential/') && !thumb.startsWith('/uploads/')))
     ) {
-      next.thumbnail = 'Use Credential URL for verify links. Upload an image or paste an image URL here.'
+      next.thumbnail =
+        'Use Credential URL for verify links. Upload an image/PDF or paste a file link here.'
     }
     setErrors(next)
     return Object.keys(next).length === 0
@@ -159,7 +160,11 @@ export function CertificateFormModal({
 
           <CertificateImagePicker
             thumbnail={form.thumbnail}
-            onThumbnailChange={(url) => updateField('thumbnail', url)}
+            thumbnailType={form.thumbnailType ?? 'image'}
+            onThumbnailChange={(url, type) => {
+              updateField('thumbnail', url)
+              if (type) updateField('thumbnailType', type)
+            }}
             title={form.title}
             error={errors.thumbnail}
           />

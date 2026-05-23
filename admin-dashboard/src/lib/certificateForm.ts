@@ -1,4 +1,4 @@
-import { normalizeExternalMediaUrl } from '@/lib/googleDriveUrl'
+import { normalizeCertificateThumbnail } from '@/lib/certificateMedia'
 import type { Certificate } from '@/types'
 
 export type CertificateInput = Omit<Certificate, 'id' | 'createdAt' | 'updatedAt'>
@@ -26,6 +26,7 @@ export function certificateToFormState(cert: Certificate): CertificateFormState 
     issuedDate,
     status: cert.status ?? 'draft',
     thumbnail: cert.thumbnail ?? '',
+    thumbnailType: cert.thumbnailType ?? 'image',
     credentialUrl: cert.credentialUrl ?? '',
     order: cert.order ?? 0,
   }
@@ -40,6 +41,7 @@ export function emptyCertificateFormState(): CertificateFormState {
     issuedDate: '',
     status: 'draft',
     thumbnail: '',
+    thumbnailType: 'image',
     credentialUrl: '',
     order: 0,
   }
@@ -61,7 +63,10 @@ export function formStateToPayload(form: CertificateFormState): CertificateInput
     issuer: form.issuer.trim(),
     issuedDate,
     status: form.status,
-    thumbnail: normalizeExternalMediaUrl((form.thumbnail ?? '').trim(), 'image'),
+    ...normalizeCertificateThumbnail(
+      (form.thumbnail ?? '').trim(),
+      form.thumbnailType ?? 'image',
+    ),
     credentialUrl: (form.credentialUrl ?? '').trim(),
     order: form.order,
   }

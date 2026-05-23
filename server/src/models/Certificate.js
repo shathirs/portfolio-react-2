@@ -26,6 +26,11 @@ const certificateSchema = new mongoose.Schema(
       default: 'published',
     },
     thumbnail: { type: String, default: '' },
+    thumbnailType: {
+      type: String,
+      enum: ['image', 'pdf'],
+      default: 'image',
+    },
     credentialUrl: { type: String, default: '' },
     order: { type: Number, default: 0 },
   },

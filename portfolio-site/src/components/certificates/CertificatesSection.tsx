@@ -2,20 +2,29 @@ import { LoadingBlock } from '@/components/ui/LoadingBlock'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { api } from '@/lib/api'
 import { formatDate } from '@/lib/format'
-import { canPreviewThumbnail, resolveThumbnailUrl } from '@/lib/thumbnailUrl'
+import { isCertificatePdf, resolveCertificateMediaUrl } from '@/lib/certificateMedia'
+import { canPreviewThumbnail } from '@/lib/thumbnailUrl'
 import type { Certificate } from '@/types'
 import { Award, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 function CertificateCard({ cert }: { cert: Certificate }) {
-  const thumb = resolveThumbnailUrl(cert.thumbnail)
-  const showThumb = canPreviewThumbnail(cert.thumbnail)
-  const viewUrl = cert.credentialUrl?.trim() || ''
+  const mediaType = cert.thumbnailType ?? 'image'
+  const thumb = resolveCertificateMediaUrl(cert.thumbnail, mediaType)
+  const showThumb = canPreviewThumbnail(cert.thumbnail, mediaType)
+  const isPdf = isCertificatePdf(cert.thumbnail, mediaType)
+  const viewUrl = cert.credentialUrl?.trim() || thumb || ''
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/40">
-        {showThumb && thumb ? (
+        {showThumb && thumb && isPdf ? (
+          <iframe
+            title={cert.title}
+            src={thumb}
+            className="h-full w-full border-0 bg-white"
+          />
+        ) : showThumb && thumb ? (
           <img src={thumb} alt="" className="h-full w-full object-cover" />
         ) : (
           <Award className="h-14 w-14 text-primary/60" strokeWidth={1.25} />
@@ -40,7 +49,7 @@ function CertificateCard({ cert }: { cert: Certificate }) {
             rel="noopener noreferrer"
             className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-hover"
           >
-            View
+            {isPdf && !cert.credentialUrl?.trim() ? 'Open PDF' : 'View'}
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         ) : (

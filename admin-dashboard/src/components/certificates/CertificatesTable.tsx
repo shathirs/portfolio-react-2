@@ -106,6 +106,7 @@ export function CertificatesTable() {
                     <div className="flex items-center gap-3">
                       <CertificateThumbnail
                         thumbnail={cert.thumbnail}
+                        thumbnailType={cert.thumbnailType}
                         title={cert.title}
                       />
                       <div className="min-w-0">

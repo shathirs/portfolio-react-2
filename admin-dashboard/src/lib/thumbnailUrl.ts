@@ -1,19 +1,23 @@
-import { normalizeExternalMediaUrl } from '@/lib/googleDriveUrl'
+import {
+  isCertificatePdf,
+  resolveCertificateMediaUrl,
+  type CertificateMediaType,
+} from '@/lib/certificateMedia'
 
-/** Resolve thumbnail for <img src> — uploads, Drive links, external URLs */
-export function resolveThumbnailUrl(thumbnail?: string): string {
-  if (!thumbnail?.trim()) return ''
-  const url = thumbnail.trim()
-  if (url.startsWith('/uploads/')) return url
-  if (url.startsWith('uploads/')) return `/${url}`
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return normalizeExternalMediaUrl(url, 'image')
-  }
-  return url
+/** Resolve certificate media URL for preview (image or PDF) */
+export function resolveThumbnailUrl(
+  thumbnail?: string,
+  mediaType?: CertificateMediaType,
+): string {
+  return resolveCertificateMediaUrl(thumbnail, mediaType)
 }
 
-export function canPreviewThumbnail(thumbnail?: string): boolean {
+export function canPreviewThumbnail(
+  thumbnail?: string,
+  mediaType?: CertificateMediaType,
+): boolean {
   if (!thumbnail?.trim()) return false
+  if (isCertificatePdf(thumbnail, mediaType)) return true
   const url = thumbnail.trim()
   if (url.startsWith('/uploads/') || url.startsWith('uploads/')) return true
   if (url.startsWith('http://') || url.startsWith('https://')) {

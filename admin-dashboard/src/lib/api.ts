@@ -259,10 +259,10 @@ export const api = {
     return data as import('@/types').SiteProfile
   },
 
-  uploadCertificateImage: async (file: File) => {
+  uploadCertificateFile: async (file: File) => {
     const token = getToken()
     const formData = new FormData()
-    formData.append('image', file)
+    formData.append('file', file)
 
     const res = await fetch(`${API_BASE}/certificates/upload`, {
       method: 'POST',
@@ -274,6 +274,6 @@ export const api = {
     if (!res.ok) {
       throw new ApiError(res.status, data.message || 'Upload failed')
     }
-    return data as { url: string }
+    return data as { url: string; thumbnailType: 'image' | 'pdf' }
   },
 }

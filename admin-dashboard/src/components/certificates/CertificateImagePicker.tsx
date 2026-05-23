@@ -1,23 +1,32 @@
-import { ImagePlus, Link2, Loader2 } from 'lucide-react'
+import { FileText, ImagePlus, Link2, Loader2 } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { Select } from '@/components/ui/Select'
 import { api, ApiError } from '@/lib/api'
+import {
+  CERTIFICATE_FILE_ACCEPT,
+  inferCertificateMediaType,
+  isCertificatePdf,
+  normalizeCertificateThumbnail,
+  type CertificateMediaType,
+} from '@/lib/certificateMedia'
 import {
   GOOGLE_DRIVE_FILE_HINT,
   isGoogleDriveFolderUrl,
-  normalizeExternalMediaUrl,
 } from '@/lib/googleDriveUrl'
-import { canPreviewThumbnail } from '@/lib/thumbnailUrl'
+import { resolveThumbnailUrl } from '@/lib/thumbnailUrl'
 import { CertificateThumbnail } from '@/components/certificates/CertificateThumbnail'
 
 interface CertificateImagePickerProps {
   thumbnail: string
-  onThumbnailChange: (url: string) => void
+  thumbnailType: CertificateMediaType
+  onThumbnailChange: (url: string, thumbnailType?: CertificateMediaType) => void
   title: string
   error?: string
 }
 
 export function CertificateImagePicker({
   thumbnail,
+  thumbnailType,
   onThumbnailChange,
   title,
   error,
@@ -26,15 +35,20 @@ export function CertificateImagePicker({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [localPreview, setLocalPreview] = useState<string | null>(null)
+  const [localPreviewType, setLocalPreviewType] = useState<CertificateMediaType>('image')
+  const [linkMediaType, setLinkMediaType] = useState<CertificateMediaType>(thumbnailType)
 
   async function handleFileChange(file: File | undefined) {
     if (!file) return
     setUploadError(null)
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+    setLocalPreviewType(isPdf ? 'pdf' : 'image')
     setLocalPreview(URL.createObjectURL(file))
     setUploading(true)
     try {
-      const { url } = await api.uploadCertificateImage(file)
-      onThumbnailChange(url)
+      const { url, thumbnailType: type } = await api.uploadCertificateFile(file)
+      onThumbnailChange(url, type)
+      setLinkMediaType(type)
     } catch (err) {
       setUploadError(err instanceof ApiError ? err.message : 'Upload failed')
       setLocalPreview(null)
@@ -44,12 +58,28 @@ export function CertificateImagePicker({
     }
   }
 
-  const previewSrc = localPreview || thumbnail
+  function applyLink(raw: string) {
+    if (!raw.trim()) return
+    if (isGoogleDriveFolderUrl(raw)) {
+      setUploadError('Use a link to a single file, not a folder.')
+      return
+    }
+    const normalized = normalizeCertificateThumbnail(raw, linkMediaType)
+    onThumbnailChange(normalized.thumbnail, normalized.thumbnailType)
+    setUploadError(null)
+    setLocalPreview(null)
+  }
+
+  const effectiveType = localPreview
+    ? localPreviewType
+    : inferCertificateMediaType(thumbnail, thumbnailType)
+  const previewSrc = localPreview || resolveThumbnailUrl(thumbnail, effectiveType)
+  const isPdf = isCertificatePdf(thumbnail, effectiveType) || localPreviewType === 'pdf'
 
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-slate-700">
-        Certificate image
+        Certificate file (image or PDF)
       </label>
 
       <div className="flex flex-wrap gap-3">
@@ -64,17 +94,27 @@ export function CertificateImagePicker({
           ) : (
             <ImagePlus className="h-4 w-4" />
           )}
-          Upload from PC
+          Upload image or PDF
         </button>
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp"
+          accept={CERTIFICATE_FILE_ACCEPT}
           className="hidden"
           onChange={(e) => handleFileChange(e.target.files?.[0])}
         />
-        <span className="flex items-center text-xs text-muted">or paste a link below (Google Drive OK)</span>
+        <span className="flex items-center text-xs text-muted">or paste a link below</span>
       </div>
+
+      <Select
+        label="Link file type"
+        value={linkMediaType}
+        onChange={(e) => setLinkMediaType(e.target.value as CertificateMediaType)}
+        options={[
+          { value: 'image', label: 'Image (JPG, PNG, …)' },
+          { value: 'pdf', label: 'PDF document' },
+        ]}
+      />
 
       <div className="relative">
         <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -84,18 +124,10 @@ export function CertificateImagePicker({
           onChange={(e) => {
             setUploadError(null)
             setLocalPreview(null)
-            onThumbnailChange(e.target.value)
+            onThumbnailChange(e.target.value, linkMediaType)
           }}
-          onBlur={() => {
-            const raw = thumbnail.trim()
-            if (!raw) return
-            if (isGoogleDriveFolderUrl(raw)) {
-              setUploadError('Use a link to a single file, not a folder.')
-              return
-            }
-            onThumbnailChange(normalizeExternalMediaUrl(raw, 'image'))
-          }}
-          placeholder="https://drive.google.com/file/d/…/view or image URL"
+          onBlur={() => applyLink(thumbnail)}
+          placeholder="Google Drive link or direct image/PDF URL"
           className={[
             'w-full rounded-lg border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-colors',
             'focus:border-primary focus:ring-2 focus:ring-primary/20',
@@ -105,8 +137,8 @@ export function CertificateImagePicker({
       </div>
 
       <p className="text-xs text-muted">
-        Upload from PC, paste a Google Drive file link, or use a direct image URL.{' '}
-        {GOOGLE_DRIVE_FILE_HINT} Credential verify pages go in Credential URL below.
+        Upload JPG, PNG, WebP, GIF (≤15MB) or PDF (≤15MB). {GOOGLE_DRIVE_FILE_HINT}{' '}
+        Credential verify pages go in Credential URL below.
       </p>
 
       {(uploadError || error) && (
@@ -114,27 +146,39 @@ export function CertificateImagePicker({
       )}
 
       {previewSrc ? (
-        <div className="flex items-center gap-4 rounded-lg border border-border bg-slate-50 p-4">
-          {localPreview ? (
+        <div className="flex items-start gap-4 rounded-lg border border-border bg-slate-50 p-4">
+          {localPreview && isPdf ? (
+            <iframe
+              title="PDF preview"
+              src={localPreview}
+              className="h-28 w-40 shrink-0 rounded-md border border-border bg-white"
+            />
+          ) : localPreview && !isPdf ? (
             <img
               src={localPreview}
               alt="Upload preview"
-              className="h-20 w-28 rounded-md object-cover"
+              className="h-28 w-40 shrink-0 rounded-md object-cover"
             />
           ) : (
             <CertificateThumbnail
               thumbnail={thumbnail}
+              thumbnailType={effectiveType}
               title={title || 'Preview'}
-              className="h-20 w-28 rounded-md object-cover"
+              className="h-28 w-40 shrink-0 rounded-md object-cover"
             />
           )}
           <div className="min-w-0 flex-1 text-xs text-muted">
             {uploading ? (
               <span>Uploading…</span>
-            ) : canPreviewThumbnail(previewSrc) || localPreview ? (
+            ) : isPdf ? (
+              <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                <FileText className="h-3.5 w-3.5" />
+                PDF certificate
+              </span>
+            ) : previewSrc ? (
               <span>Image preview</span>
             ) : (
-              <span>This URL is not a direct image — try upload or another link.</span>
+              <span>Could not preview — check the link or file type.</span>
             )}
             {thumbnail.startsWith('/uploads/') ? (
               <p className="mt-1 truncate text-emerald-700">Saved on server</p>
@@ -145,7 +189,8 @@ export function CertificateImagePicker({
               type="button"
               onClick={() => {
                 setLocalPreview(null)
-                onThumbnailChange('')
+                onThumbnailChange('', 'image')
+                setLinkMediaType('image')
               }}
               className="text-xs font-medium text-red-600 hover:underline"
             >
