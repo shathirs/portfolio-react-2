@@ -11,6 +11,7 @@ export function inferCertificateMediaType(
   if (!value) return 'image'
   if (value.endsWith('.pdf') || value.includes('.pdf?')) return 'pdf'
   if (value.includes('/uploads/certificates/') && value.includes('.pdf')) return 'pdf'
+  if (value.includes('res.cloudinary.com') && /\/pdf|\.pdf/i.test(value)) return 'pdf'
   return 'image'
 }
 

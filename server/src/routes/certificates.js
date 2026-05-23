@@ -3,6 +3,7 @@ import { Certificate } from '../models/Certificate.js'
 import { protect } from '../middleware/auth.js'
 import { uploadCertificateImage } from '../middleware/uploadCertificate.js'
 import { mapDoc, mapDocs } from '../utils/mapDoc.js'
+import { persistUpload } from '../services/fileUpload.js'
 import { normalizeCertificateThumbnail } from '../utils/certificateMedia.js'
 
 const router = Router()
@@ -34,7 +35,7 @@ function parseCertificateBody(body) {
   return data
 }
 
-function respondCertificateUpload(req, res, err) {
+async function respondCertificateUpload(req, res, err) {
   if (err) {
     const message =
       err.code === 'LIMIT_FILE_SIZE'
@@ -45,22 +46,30 @@ function respondCertificateUpload(req, res, err) {
   if (!req.file) {
     return res.status(400).json({ message: 'No file provided' })
   }
-  const isPdf =
-    req.file.mimetype === 'application/pdf' ||
-    req.file.filename.toLowerCase().endsWith('.pdf')
-  res.status(201).json({
-    url: `/uploads/certificates/${req.file.filename}`,
-    thumbnailType: isPdf ? 'pdf' : 'image',
-  })
+  try {
+    const isPdf =
+      req.file.mimetype === 'application/pdf' ||
+      (req.file.originalname || '').toLowerCase().endsWith('.pdf')
+    const { url } = await persistUpload(req.file, 'certificates', {
+      resourceType: isPdf ? 'image' : 'image',
+    })
+    res.status(201).json({
+      url,
+      thumbnailType: isPdf ? 'pdf' : 'image',
+    })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ message: e.message || 'Upload failed' })
+  }
 }
 
 router.post('/upload', protect, (req, res) => {
   uploadCertificateImage.single('file')(req, res, (err) => {
     if (req.file || err) {
-      return respondCertificateUpload(req, res, err)
+      return void respondCertificateUpload(req, res, err)
     }
     uploadCertificateImage.single('image')(req, res, (err2) => {
-      respondCertificateUpload(req, res, err2)
+      void respondCertificateUpload(req, res, err2)
     })
   })
 })

@@ -1,8 +1,10 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import { uploadsDir } from './middleware/uploadCertificate.js'
-import { projectUploadsDir } from './middleware/uploadProject.js'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { configureCloudinary } from './config/cloudinary.js'
+import { getStorageMode } from './services/fileUpload.js'
 import { connectDB } from './config/db.js'
 import { ensureAdmin } from './config/ensureAdmin.js'
 import authRoutes from './routes/auth.js'
@@ -14,11 +16,16 @@ import certificateRoutes from './routes/certificates.js'
 import educationRoutes from './routes/education.js'
 import publicRoutes from './routes/public.js'
 import chatRoutes from './routes/chat.js'
-import profileRoutes, { profileUploadsDir } from './routes/profile.js'
+import profileRoutes from './routes/profile.js'
 import { ensureProfile } from './config/ensureProfile.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const uploadRoot = path.join(__dirname, '../uploads')
 
 const app = express()
 const PORT = process.env.PORT || 5000
+
+configureCloudinary()
 
 const allowedOrigins = (
   process.env.CLIENT_URL ||
@@ -36,7 +43,6 @@ function isAllowedOrigin(origin) {
   if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     return true
   }
-  // Vercel production + preview deployments (portfolio + admin)
   if (/^https:\/\/[\w.-]+\.vercel\.app$/.test(origin)) {
     return true
   }
@@ -56,11 +62,14 @@ app.use(
   }),
 )
 app.use(express.json({ limit: '10mb' }))
-app.use('/uploads/certificates', express.static(uploadsDir))
-app.use('/uploads/projects', express.static(projectUploadsDir))
+
+// Legacy local uploads (before Cloudinary or when Cloudinary is off)
+app.use('/uploads/certificates', express.static(path.join(uploadRoot, 'certificates')))
+app.use('/uploads/projects', express.static(path.join(uploadRoot, 'projects')))
+app.use('/uploads/profile', express.static(path.join(uploadRoot, 'profile')))
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' })
+  res.json({ status: 'ok', storage: getStorageMode() })
 })
 
 app.use('/api/auth', authRoutes)
@@ -99,6 +108,7 @@ async function start() {
   await ensureProfile()
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`)
+    console.log(`File storage: ${getStorageMode()}`)
   })
 }
 

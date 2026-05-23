@@ -95,6 +95,23 @@ Copy from `server/.env.example`. Never commit `.env` to git.
 | `JWT_EXPIRES_IN` | `7d` | How long login tokens stay valid (e.g. `7d`, `24h`). |
 | `CLIENT_URL` | `http://localhost:5173,http://localhost:5174` | Comma-separated URLs allowed by CORS — your admin and portfolio dev servers. Add production URLs when you deploy. |
 
+#### Recommended for production — Cloudinary (file uploads)
+
+Uploads (certificates, projects, profile photo) are stored on [Cloudinary](https://cloudinary.com/) when these are set. **Required on Render** so images and PDFs do not disappear after a redeploy.
+
+| Variable | Description |
+|----------|-------------|
+| `CLOUDINARY_CLOUD_NAME` | From Cloudinary Dashboard → Account Details |
+| `CLOUDINARY_API_KEY` | API Key |
+| `CLOUDINARY_API_SECRET` | API Secret |
+| `CLOUDINARY_FOLDER` | Optional folder prefix (default: `portfolio`) |
+
+Files are organized as `portfolio/certificates`, `portfolio/projects`, `portfolio/profile`.
+
+Check storage mode: `GET /api/health` → `{ "storage": "cloudinary" }` or `"local"`.
+
+Without Cloudinary, files save to `server/uploads/` (fine locally; **not persistent** on Render free tier).
+
 #### Optional — AI (portfolio chat + admin skill suggestions)
 
 Set **one** provider. Restart the server after adding a key.

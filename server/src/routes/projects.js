@@ -9,6 +9,7 @@ import {
 } from '../middleware/uploadProject.js'
 import { mediaTypeFromFile } from '../utils/projectMedia.js'
 import { mapProject, mapProjects } from '../utils/mapProject.js'
+import { persistUpload } from '../services/fileUpload.js'
 import { sanitizeMediaList } from '../utils/projectMedia.js'
 import { normalizeExternalMediaUrl } from '../utils/googleDriveUrl.js'
 
@@ -69,7 +70,7 @@ router.get('/:id', protect, async (req, res) => {
 })
 
 router.post('/upload', protect, (req, res) => {
-  uploadProjectImage.single('image')(req, res, (err) => {
+  uploadProjectImage.single('image')(req, res, async (err) => {
     if (err) {
       console.error(err)
       return res.status(400).json({ message: err.message || 'Upload failed' })
@@ -77,17 +78,25 @@ router.post('/upload', protect, (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: 'No image file provided' })
     }
-    res.json({
-      url: `/uploads/projects/${req.file.filename}`,
-      type: 'image',
-      mimeType: req.file.mimetype,
-      fileName: req.file.originalname,
-    })
+    try {
+      const { url } = await persistUpload(req.file, 'projects', {
+        resourceType: 'image',
+      })
+      res.json({
+        url,
+        type: 'image',
+        mimeType: req.file.mimetype,
+        fileName: req.file.originalname,
+      })
+    } catch (e) {
+      console.error(e)
+      res.status(500).json({ message: e.message || 'Upload failed' })
+    }
   })
 })
 
 router.post('/upload-media', protect, (req, res) => {
-  uploadProjectMedia.single('file')(req, res, (err) => {
+  uploadProjectMedia.single('file')(req, res, async (err) => {
     if (err) {
       console.error(err)
       return res.status(400).json({ message: err.message || 'Upload failed' })
@@ -99,13 +108,21 @@ router.post('/upload-media', protect, (req, res) => {
     if (sizeErr) return res.status(400).json({ message: sizeErr })
 
     const type = mediaTypeFromFile(req.file)
-    res.json({
-      url: `/uploads/projects/${req.file.filename}`,
-      type,
-      mimeType: req.file.mimetype,
-      fileName: req.file.originalname,
-      title: req.file.originalname.replace(/\.[^.]+$/, ''),
-    })
+    try {
+      const resourceType =
+        type === 'video' ? 'video' : type === 'image' ? 'image' : 'raw'
+      const { url } = await persistUpload(req.file, 'projects', { resourceType })
+      res.json({
+        url,
+        type,
+        mimeType: req.file.mimetype,
+        fileName: req.file.originalname,
+        title: req.file.originalname.replace(/\.[^.]+$/, ''),
+      })
+    } catch (e) {
+      console.error(e)
+      res.status(500).json({ message: e.message || 'Upload failed' })
+    }
   })
 })
 

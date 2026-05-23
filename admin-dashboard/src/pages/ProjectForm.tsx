@@ -256,7 +256,7 @@ export function ProjectForm() {
                 <p className="text-xs text-muted">
                   {imageUploading
                     ? 'Uploading…'
-                    : 'Upload to server (may not persist on Render) or paste a Google Drive / image URL.'}
+                    : 'Uploads use Cloudinary when configured, or paste a Google Drive / image URL.'}
                 </p>
                 {imageError ? (
                   <p className="text-xs text-red-500">{imageError}</p>

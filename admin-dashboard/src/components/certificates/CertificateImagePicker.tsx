@@ -180,8 +180,10 @@ export function CertificateImagePicker({
             ) : (
               <span>Could not preview — check the link or file type.</span>
             )}
-            {thumbnail.startsWith('/uploads/') ? (
-              <p className="mt-1 truncate text-emerald-700">Saved on server</p>
+            {thumbnail.startsWith('https://res.cloudinary.com/') ? (
+              <p className="mt-1 truncate text-emerald-700">Saved on Cloudinary</p>
+            ) : thumbnail.startsWith('/uploads/') ? (
+              <p className="mt-1 truncate text-amber-700">Saved locally (use Cloudinary in production)</p>
             ) : null}
           </div>
           {thumbnail ? (

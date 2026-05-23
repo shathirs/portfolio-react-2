@@ -3,10 +3,8 @@ import { SiteProfile } from '../models/SiteProfile.js'
 import { defaultProfile } from '../config/defaultProfile.js'
 import { protect } from '../middleware/auth.js'
 import { mapDoc } from '../utils/mapDoc.js'
-import {
-  profileUploadsDir,
-  uploadProfileImage,
-} from '../middleware/uploadProfile.js'
+import { uploadProfileImage } from '../middleware/uploadProfile.js'
+import { persistUpload } from '../services/fileUpload.js'
 
 const router = Router()
 
@@ -82,17 +80,18 @@ router.post('/upload-image', protect, (req, res) => {
       return res.status(400).json({ message: 'No image file provided' })
     }
     try {
+      const { url } = await persistUpload(req.file, 'profile', {
+        resourceType: 'image',
+      })
       const doc = await getProfileDoc()
-      doc.profileImage = `/uploads/profile/${req.file.filename}`
+      doc.profileImage = url
       await doc.save()
       res.json(mapDoc(doc))
     } catch (e) {
       console.error(e)
-      res.status(500).json({ message: 'Failed to save profile image' })
+      res.status(500).json({ message: e.message || 'Failed to save profile image' })
     }
   })
 })
-
-export { profileUploadsDir }
 
 export default router
