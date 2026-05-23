@@ -1,6 +1,8 @@
 import { LoadingBlock } from '@/components/ui/LoadingBlock'
 import { api } from '@/lib/api'
 import { ProjectMediaGallery } from '@/components/projects/ProjectMediaGallery'
+import { PdfViewer } from '@/components/projects/PdfViewer'
+import { isPdfMedia } from '@/lib/documentPreview'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
 import type { Project } from '@/types'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
@@ -42,7 +44,8 @@ export function ProjectDetails() {
   }
 
   const features = project.keyFeatures ?? []
-  const imageSrc = resolveMediaUrl(project.imageUrl)
+  const coverIsPdf = isPdfMedia(project.imageUrl)
+  const imageSrc = coverIsPdf ? '' : resolveMediaUrl(project.imageUrl, 'image')
 
   return (
     <div className="bg-slate-50 pb-20 pt-8">
@@ -65,7 +68,15 @@ export function ProjectDetails() {
             </h1>
             <p className="mt-4 text-lg text-slate-600">{project.shortDescription}</p>
 
-            {imageSrc ? (
+            {coverIsPdf && project.imageUrl ? (
+              <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                <PdfViewer
+                  url={project.imageUrl}
+                  title={project.title}
+                  className="aspect-[4/3] w-full"
+                />
+              </div>
+            ) : imageSrc ? (
               <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
                 <img
                   src={imageSrc}

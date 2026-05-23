@@ -2,7 +2,9 @@ import { LoadingBlock } from '@/components/ui/LoadingBlock'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { api } from '@/lib/api'
 import { formatDate } from '@/lib/format'
+import { PdfViewer } from '@/components/projects/PdfViewer'
 import { isCertificatePdf, resolveCertificateMediaUrl } from '@/lib/certificateMedia'
+import { getPdfDirectUrl, toAbsoluteUrl } from '@/lib/documentPreview'
 import { canPreviewThumbnail } from '@/lib/thumbnailUrl'
 import type { Certificate } from '@/types'
 import { Award, ExternalLink } from 'lucide-react'
@@ -13,17 +15,16 @@ function CertificateCard({ cert }: { cert: Certificate }) {
   const thumb = resolveCertificateMediaUrl(cert.thumbnail, mediaType)
   const showThumb = canPreviewThumbnail(cert.thumbnail, mediaType)
   const isPdf = isCertificatePdf(cert.thumbnail, mediaType)
-  const viewUrl = cert.credentialUrl?.trim() || thumb || ''
+  const viewUrl =
+    cert.credentialUrl?.trim() ||
+    (isPdf ? toAbsoluteUrl(getPdfDirectUrl(cert.thumbnail, 'pdf')) : thumb) ||
+    ''
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/40">
-        {showThumb && thumb && isPdf ? (
-          <iframe
-            title={cert.title}
-            src={thumb}
-            className="h-full w-full border-0 bg-white"
-          />
+        {showThumb && cert.thumbnail && isPdf ? (
+          <PdfViewer url={cert.thumbnail} title={cert.title} className="h-full w-full" />
         ) : showThumb && thumb ? (
           <img src={thumb} alt="" className="h-full w-full object-cover" />
         ) : (

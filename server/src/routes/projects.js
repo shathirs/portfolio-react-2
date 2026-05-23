@@ -110,7 +110,7 @@ router.post('/upload-media', protect, (req, res) => {
     const type = mediaTypeFromFile(req.file)
     try {
       const resourceType =
-        type === 'video' ? 'video' : type === 'image' ? 'image' : 'raw'
+        type === 'video' ? 'video' : type === 'pdf' ? 'image' : type === 'image' ? 'image' : 'raw'
       const { url } = await persistUpload(req.file, 'projects', { resourceType })
       res.json({
         url,

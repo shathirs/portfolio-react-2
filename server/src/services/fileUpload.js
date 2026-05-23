@@ -29,16 +29,19 @@ function safeFilename(file) {
   return ext ? `${base}${ext}` : base
 }
 
-function uploadBufferToCloudinary(buffer, { folder, resourceType }) {
+function uploadBufferToCloudinary(buffer, { folder, resourceType, format }) {
   return new Promise((resolve, reject) => {
+    const options = {
+      folder,
+      resource_type: resourceType,
+      use_filename: false,
+      unique_filename: true,
+      overwrite: false,
+    }
+    if (format) options.format = format
+
     const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-        use_filename: false,
-        unique_filename: true,
-        overwrite: false,
-      },
+      options,
       (error, result) => {
         if (error) reject(error)
         else resolve(result)
@@ -72,9 +75,13 @@ export async function persistUpload(file, subfolder, options = {}) {
   if (isCloudinaryConfigured()) {
     const folder = `${baseCloudFolder()}/${subfolder}`
     const resourceType = options.resourceType || inferResourceType(file)
+    const isPdf =
+      file.mimetype === 'application/pdf' ||
+      (file.originalname || '').toLowerCase().endsWith('.pdf')
     const result = await uploadBufferToCloudinary(file.buffer, {
       folder,
-      resourceType,
+      resourceType: isPdf ? 'image' : resourceType,
+      format: isPdf ? 'pdf' : undefined,
     })
     return {
       url: result.secure_url,
