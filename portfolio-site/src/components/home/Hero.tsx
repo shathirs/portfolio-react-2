@@ -1,10 +1,18 @@
 import { Download, Mail } from 'lucide-react'
+import { useMemo } from 'react'
+import { TypingText } from '@/components/ui/TypingText'
+import { HERO_DISPLAY_NAME, HERO_TITLE } from '@/config/siteBrand'
 import { techOrbit } from '@/data/profile'
 import { useProfile, useProfileImage } from '@/context/ProfileContext'
 
 export function Hero() {
   const profile = useProfile()
   const profileImage = useProfileImage()
+
+  const typingLines = useMemo(
+    () => [`${HERO_DISPLAY_NAME}.`, `${HERO_TITLE}.`],
+    [],
+  )
 
   return (
     <section
@@ -16,17 +24,18 @@ export function Hero() {
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
         <div className="order-2 lg:order-1">
-          <p className="mb-3 text-sm font-medium tracking-wide text-primary">
+          <p className="mb-2 text-base font-medium text-slate-300 sm:text-lg">
             Hello, I&apos;m
           </p>
-          <h1 className="text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
-            <span className="bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent">
-              {profile.name}
-            </span>
+          <h1 className="min-h-[1.25em] text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl xl:text-6xl">
+            <TypingText
+              lines={typingLines}
+              className="bg-gradient-to-r from-[#1589FF] via-primary to-violet-400 bg-clip-text text-transparent"
+              typingSpeed={90}
+              deleteSpeed={50}
+              pause={1800}
+            />
           </h1>
-          <h2 className="mt-3 text-2xl font-semibold text-slate-200 sm:text-3xl">
-            {profile.title}
-          </h2>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-400">
             {profile.bio}
           </p>
@@ -125,12 +134,12 @@ export function Hero() {
                 {profileImage ? (
                   <img
                     src={profileImage}
-                    alt={profile.name}
+                    alt={HERO_DISPLAY_NAME}
                     className="h-44 w-44 rounded-full object-cover sm:h-52 sm:w-52"
                   />
                 ) : (
                   <div className="flex h-44 w-44 items-center justify-center rounded-full bg-navy-light text-5xl font-bold text-white sm:h-52 sm:w-52">
-                    {profile.name.charAt(0)}
+                    {HERO_DISPLAY_NAME.charAt(0)}
                   </div>
                 )}
               </div>

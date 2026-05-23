@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { AI_ASSISTANT_NAME } from '../config/siteBrand.js'
 import { isAiConfigured, replyToPortfolioChat } from '../services/portfolioChat.js'
 import { SiteProfile } from '../models/SiteProfile.js'
 import { defaultProfile } from '../config/defaultProfile.js'
@@ -39,7 +40,7 @@ router.post('/', async (req, res) => {
     const profile = mapDoc(profileDoc) ?? defaultProfile
     const { messages } = req.body ?? {}
 
-    const result = await replyToPortfolioChat(messages, profile.name)
+    const result = await replyToPortfolioChat(messages, AI_ASSISTANT_NAME)
     res.json(result)
   } catch (err) {
     console.error(err)

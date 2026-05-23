@@ -1,5 +1,9 @@
 import { ChatMessageContent } from '@/components/chat/ChatMessageContent'
-import { useProfileOptional, useProfileImage } from '@/context/ProfileContext'
+import {
+  AI_ASSISTANT_GREETING,
+  AI_ASSISTANT_NAME,
+} from '@/config/siteBrand'
+import { useProfileImage } from '@/context/ProfileContext'
 import { api } from '@/lib/api'
 import type { ChatMessage } from '@/types/chat'
 import {
@@ -41,9 +45,7 @@ function TypingIndicator() {
 }
 
 export function PortfolioAiChat() {
-  const profile = useProfileOptional()
   const profileImage = useProfileImage()
-  const ownerName = profile?.name ?? 'Shathir'
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -55,26 +57,13 @@ export function PortfolioAiChat() {
     {
       id: 1,
       role: 'assistant',
-      content: `Hi! I'm ${ownerName}'s portfolio assistant. Ask about projects, skills, education, certificates, or how to reach me.`,
+      content: AI_ASSISTANT_GREETING,
     },
   ])
 
   useEffect(() => {
     api.getChatStatus().then((s) => setAiReady(s.configured)).catch(() => setAiReady(false))
   }, [])
-
-  useEffect(() => {
-    if (!profile?.name) return
-    setMessages((prev) => {
-      if (prev.length !== 1 || prev[0].id !== 1) return prev
-      return [
-        {
-          ...prev[0],
-          content: `Hi! I'm ${profile.name}'s portfolio assistant. Ask about projects, skills, education, certificates, or how to reach me.`,
-        },
-      ]
-    })
-  }, [profile?.name])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -159,7 +148,7 @@ export function PortfolioAiChat() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-base font-semibold text-white">
-                    {ownerName}&apos;s Assistant
+                    {AI_ASSISTANT_NAME}&apos;s AI Assistant
                   </h3>
                   <p className="text-xs text-slate-400">
                     {aiReady

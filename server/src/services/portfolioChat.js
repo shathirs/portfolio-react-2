@@ -15,7 +15,7 @@ async function getContext() {
 
 function buildSystemPrompt(portfolioContext, ownerName) {
   return [
-    `You are the friendly AI assistant on ${ownerName}'s portfolio website.`,
+    `You are ${ownerName}'s AI assistant on their portfolio website.`,
     'Answer questions using ONLY the portfolio context below.',
     'If something is not in the context, say so briefly and point to the contact form or profile links.',
     'Do not invent employers, grades, projects, or institutions.',
