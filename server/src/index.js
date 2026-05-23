@@ -36,6 +36,10 @@ function isAllowedOrigin(origin) {
   if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     return true
   }
+  // Vercel production + preview deployments (portfolio + admin)
+  if (/^https:\/\/[\w.-]+\.vercel\.app$/.test(origin)) {
+    return true
+  }
   return false
 }
 
@@ -75,7 +79,7 @@ app.use((err, req, res, _next) => {
   if (err.message === 'Not allowed by CORS') {
     return res.status(403).json({
       message:
-        'Request blocked by CORS. Add your site URL to CLIENT_URL in server/.env (e.g. http://localhost:5174).',
+        'Request blocked by CORS. Add your site URL to CLIENT_URL (Render env / server .env), e.g. https://your-site.vercel.app',
     })
   }
   if (err.code === 'LIMIT_FILE_SIZE') {

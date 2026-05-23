@@ -1,6 +1,11 @@
 import { ImagePlus, Link2, Loader2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
+import {
+  GOOGLE_DRIVE_FILE_HINT,
+  isGoogleDriveFolderUrl,
+  normalizeExternalMediaUrl,
+} from '@/lib/googleDriveUrl'
 import { canPreviewThumbnail } from '@/lib/thumbnailUrl'
 import { CertificateThumbnail } from '@/components/certificates/CertificateThumbnail'
 
@@ -68,7 +73,7 @@ export function CertificateImagePicker({
           className="hidden"
           onChange={(e) => handleFileChange(e.target.files?.[0])}
         />
-        <span className="flex items-center text-xs text-muted">or paste a link below</span>
+        <span className="flex items-center text-xs text-muted">or paste a link below (Google Drive OK)</span>
       </div>
 
       <div className="relative">
@@ -81,7 +86,16 @@ export function CertificateImagePicker({
             setLocalPreview(null)
             onThumbnailChange(e.target.value)
           }}
-          placeholder="https://example.com/badge.png"
+          onBlur={() => {
+            const raw = thumbnail.trim()
+            if (!raw) return
+            if (isGoogleDriveFolderUrl(raw)) {
+              setUploadError('Use a link to a single file, not a folder.')
+              return
+            }
+            onThumbnailChange(normalizeExternalMediaUrl(raw, 'image'))
+          }}
+          placeholder="https://drive.google.com/file/d/…/view or image URL"
           className={[
             'w-full rounded-lg border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-colors',
             'focus:border-primary focus:ring-2 focus:ring-primary/20',
@@ -91,8 +105,8 @@ export function CertificateImagePicker({
       </div>
 
       <p className="text-xs text-muted">
-        Upload JPG/PNG/WebP (max 5MB) or paste a direct image URL. Credential pages
-        (Hyperstack, etc.) go in Credential URL below — not here.
+        Upload from PC, paste a Google Drive file link, or use a direct image URL.{' '}
+        {GOOGLE_DRIVE_FILE_HINT} Credential verify pages go in Credential URL below.
       </p>
 
       {(uploadError || error) && (

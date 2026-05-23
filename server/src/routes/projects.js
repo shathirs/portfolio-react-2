@@ -10,6 +10,7 @@ import {
 import { mediaTypeFromFile } from '../utils/projectMedia.js'
 import { mapProject, mapProjects } from '../utils/mapProject.js'
 import { sanitizeMediaList } from '../utils/projectMedia.js'
+import { normalizeExternalMediaUrl } from '../utils/googleDriveUrl.js'
 
 const router = Router()
 
@@ -21,7 +22,7 @@ function sanitizeKeyFeatures(value) {
 function sanitizeImageUrl(url) {
   const value = String(url ?? '').trim()
   if (!value || value.startsWith('blob:')) return ''
-  return value
+  return normalizeExternalMediaUrl(value, 'image')
 }
 
 function sanitizeProjectBody(body) {

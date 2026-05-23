@@ -1,14 +1,6 @@
 import type { ProjectMediaItem, ProjectMediaType } from '@/types'
 
-export function resolveMediaUrl(url?: string): string {
-  if (!url?.trim()) return ''
-  const value = url.trim()
-  if (value.startsWith('blob:')) return ''
-  if (value.startsWith('http://') || value.startsWith('https://')) return value
-  if (value.startsWith('/uploads/')) return value
-  if (value.startsWith('uploads/')) return `/${value}`
-  return value
-}
+export { resolveMediaUrl } from '@/lib/mediaUrl'
 
 export const MEDIA_TYPE_LABELS: Record<ProjectMediaType, string> = {
   image: 'Image',

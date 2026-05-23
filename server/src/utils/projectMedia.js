@@ -1,3 +1,5 @@
+import { normalizeExternalMediaUrl } from './googleDriveUrl.js'
+
 const ALLOWED_TYPES = new Set(['image', 'video', 'pdf', 'document'])
 
 const EXT_BY_TYPE = {
@@ -34,7 +36,7 @@ export function safeExtension(type, originalName) {
 
 export function sanitizeMediaItem(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null
-  const url = String(raw.url ?? '').trim()
+  let url = String(raw.url ?? '').trim()
   if (!url || url.startsWith('blob:')) return null
 
   let type = String(raw.type ?? '').toLowerCase()
@@ -43,8 +45,11 @@ export function sanitizeMediaItem(raw, index = 0) {
     else if (/\.(mp4|webm)$/i.test(url)) type = 'video'
     else if (/\.pdf$/i.test(url)) type = 'pdf'
     else if (/\.(docx?)$/i.test(url)) type = 'document'
+    else if (/drive\.google\.com|docs\.google\.com/i.test(url)) type = 'image'
     else return null
   }
+
+  url = normalizeExternalMediaUrl(url, type)
 
   return {
     title: String(raw.title ?? raw.fileName ?? '').trim() || 'Untitled',

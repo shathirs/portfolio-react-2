@@ -1,3 +1,4 @@
+import { normalizeExternalMediaUrl } from '@/lib/googleDriveUrl'
 import type { Certificate } from '@/types'
 
 export type CertificateInput = Omit<Certificate, 'id' | 'createdAt' | 'updatedAt'>
@@ -60,7 +61,7 @@ export function formStateToPayload(form: CertificateFormState): CertificateInput
     issuer: form.issuer.trim(),
     issuedDate,
     status: form.status,
-    thumbnail: (form.thumbnail ?? '').trim(),
+    thumbnail: normalizeExternalMediaUrl((form.thumbnail ?? '').trim(), 'image'),
     credentialUrl: (form.credentialUrl ?? '').trim(),
     order: form.order,
   }

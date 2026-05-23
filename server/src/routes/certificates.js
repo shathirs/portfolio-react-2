@@ -3,6 +3,7 @@ import { Certificate } from '../models/Certificate.js'
 import { protect } from '../middleware/auth.js'
 import { uploadCertificateImage } from '../middleware/uploadCertificate.js'
 import { mapDoc, mapDocs } from '../utils/mapDoc.js'
+import { normalizeExternalMediaUrl } from '../utils/googleDriveUrl.js'
 
 const router = Router()
 
@@ -13,7 +14,7 @@ function parseCertificateBody(body) {
     category: body.category,
     issuer: body.issuer?.trim(),
     status: body.status,
-    thumbnail: body.thumbnail?.trim() ?? '',
+    thumbnail: normalizeExternalMediaUrl(body.thumbnail?.trim() ?? '', 'image'),
     credentialUrl: body.credentialUrl?.trim() ?? '',
     order: body.order ?? 0,
   }

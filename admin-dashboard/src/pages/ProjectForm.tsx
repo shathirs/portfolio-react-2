@@ -22,6 +22,7 @@ import {
 import { ProjectMediaManager } from '@/components/projects/ProjectMediaManager'
 import { api, ApiError } from '@/lib/api'
 import { sortMedia } from '@/lib/projectMedia'
+import { normalizeExternalMediaUrl } from '@/lib/googleDriveUrl'
 import { resolveMediaUrl } from '@/lib/mediaUrl'
 import type { ProjectStatus } from '@/types'
 
@@ -97,9 +98,16 @@ export function ProjectForm() {
       shortDescription: form.shortDescription.trim(),
       liveDemoUrl: form.liveDemoUrl.trim(),
       sourceCodeUrl: form.sourceCodeUrl.trim(),
-      imageUrl: resolveMediaUrl(form.imageUrl) || form.imageUrl.trim(),
+      imageUrl:
+        normalizeExternalMediaUrl(form.imageUrl.trim(), 'image') ||
+        resolveMediaUrl(form.imageUrl) ||
+        form.imageUrl.trim(),
       keyFeatures: (form.keyFeatures ?? []).map((f) => f.trim()).filter(Boolean),
-      media: sortMedia(form.media ?? []).map((m, i) => ({ ...m, order: i })),
+      media: sortMedia(form.media ?? []).map((m, i) => ({
+        ...m,
+        order: i,
+        url: normalizeExternalMediaUrl(m.url.trim(), m.type) || m.url.trim(),
+      })),
     }
 
     try {
@@ -233,15 +241,22 @@ export function ProjectForm() {
                   onChange={(e) => {
                     const url = e.target.value.trim()
                     updateField('imageUrl', url)
-                    setImagePreview(resolveMediaUrl(url))
+                    setImagePreview(resolveMediaUrl(url, 'image'))
                     setImageError(null)
                   }}
-                  placeholder="https://… or /uploads/projects/…"
+                  onBlur={(e) => {
+                    const raw = e.target.value.trim()
+                    if (!raw || raw.startsWith('/uploads/')) return
+                    const normalized = normalizeExternalMediaUrl(raw, 'image')
+                    updateField('imageUrl', normalized)
+                    setImagePreview(resolveMediaUrl(normalized, 'image'))
+                  }}
+                  placeholder="Google Drive link or https://…"
                 />
                 <p className="text-xs text-muted">
                   {imageUploading
                     ? 'Uploading…'
-                    : 'Upload saves to the server so your portfolio can display it.'}
+                    : 'Upload to server (may not persist on Render) or paste a Google Drive / image URL.'}
                 </p>
                 {imageError ? (
                   <p className="text-xs text-red-500">{imageError}</p>

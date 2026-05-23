@@ -8,10 +8,16 @@ interface ProjectMediaGalleryProps {
 }
 
 export function ProjectMediaGallery({ media = [], projectTitle }: ProjectMediaGalleryProps) {
-  const items = sortMedia(media).map((m) => ({
-    ...m,
-    src: resolveMediaUrl(m.url),
-  })).filter((m) => m.src)
+  const items = sortMedia(media)
+    .map((m) => ({
+      ...m,
+      src: resolveMediaUrl(m.url, m.type),
+    }))
+    .filter((m) => m.src)
+
+  function isDriveEmbed(src: string) {
+    return /drive\.google\.com\/file\/d\//i.test(src)
+  }
 
   if (items.length === 0) return null
 
@@ -62,14 +68,24 @@ export function ProjectMediaGallery({ media = [], projectTitle }: ProjectMediaGa
                 key={item.id ?? item.url}
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm"
               >
-                <video
-                  src={item.src}
-                  controls
-                  className="aspect-video w-full"
-                  preload="metadata"
-                >
-                  Your browser does not support video playback.
-                </video>
+                {isDriveEmbed(item.src) ? (
+                  <iframe
+                    title={item.title || 'Video'}
+                    src={item.src}
+                    className="aspect-video w-full border-0"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  />
+                ) : (
+                  <video
+                    src={item.src}
+                    controls
+                    className="aspect-video w-full"
+                    preload="metadata"
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                )}
                 {item.title ? (
                   <p className="bg-white px-4 py-2 text-sm text-slate-600">{item.title}</p>
                 ) : null}
@@ -91,11 +107,12 @@ export function ProjectMediaGallery({ media = [], projectTitle }: ProjectMediaGa
                 key={item.id ?? item.url}
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
               >
-                {item.type === 'pdf' ? (
+                {item.type === 'pdf' || isDriveEmbed(item.src) ? (
                   <iframe
-                    title={item.title || 'PDF preview'}
+                    title={item.title || 'Document preview'}
                     src={item.src}
                     className="aspect-[4/3] w-full border-0 bg-slate-100"
+                    allowFullScreen
                   />
                 ) : (
                   <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 bg-slate-50 p-6 text-center">

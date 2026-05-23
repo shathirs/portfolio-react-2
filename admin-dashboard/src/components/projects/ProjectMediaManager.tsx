@@ -4,13 +4,21 @@ import {
   FileText,
   Film,
   ImageIcon,
+  Link2,
   Star,
   Trash2,
   Upload,
 } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { api } from '@/lib/api'
+import {
+  GOOGLE_DRIVE_FILE_HINT,
+  isGoogleDriveFolderUrl,
+  normalizeExternalMediaUrl,
+} from '@/lib/googleDriveUrl'
 import {
   MEDIA_TYPE_LABELS,
   newMediaItem,
@@ -18,7 +26,7 @@ import {
   resolveMediaUrl,
   sortMedia,
 } from '@/lib/projectMedia'
-import type { ProjectMediaItem } from '@/types'
+import type { ProjectMediaItem, ProjectMediaType } from '@/types'
 
 interface ProjectMediaManagerProps {
   media: ProjectMediaItem[]
@@ -42,8 +50,41 @@ export function ProjectMediaManager({
 }: ProjectMediaManagerProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [driveUrl, setDriveUrl] = useState('')
+  const [driveTitle, setDriveTitle] = useState('')
+  const [driveType, setDriveType] = useState<ProjectMediaType>('image')
 
   const sorted = sortMedia(media)
+
+  function addDriveLink() {
+    const raw = driveUrl.trim()
+    if (!raw) {
+      setError('Paste a Google Drive file link.')
+      return
+    }
+    if (isGoogleDriveFolderUrl(raw)) {
+      setError('Folder links are not supported. Use a link to a single file.')
+      return
+    }
+    const url = normalizeExternalMediaUrl(raw, driveType)
+    const next = [
+      ...media,
+      newMediaItem(
+        {
+          title: driveTitle.trim() || 'Google Drive file',
+          type: driveType,
+          url,
+          fileName: raw,
+        },
+        media.length,
+      ),
+    ]
+    onChange(next.map((m, i) => ({ ...m, order: i })))
+    if (driveType === 'image' && !coverUrl) onCoverChange(url)
+    setDriveUrl('')
+    setDriveTitle('')
+    setError(null)
+  }
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList?.length) return
@@ -138,6 +179,40 @@ export function ProjectMediaManager({
         />
       </label>
 
+      <div className="rounded-xl border border-border bg-white p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Link2 className="h-4 w-4 text-primary" />
+          Add from Google Drive
+        </div>
+        <p className="text-xs text-muted">{GOOGLE_DRIVE_FILE_HINT}</p>
+        <Input
+          label="Google Drive file link"
+          type="url"
+          value={driveUrl}
+          onChange={(e) => setDriveUrl(e.target.value)}
+          placeholder="https://drive.google.com/file/d/…/view?usp=sharing"
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            label="Display name (optional)"
+            value={driveTitle}
+            onChange={(e) => setDriveTitle(e.target.value)}
+            placeholder="Architecture diagram"
+          />
+          <Select
+            label="File type"
+            value={driveType}
+            onChange={(e) => setDriveType(e.target.value as ProjectMediaType)}
+            options={(
+              ['image', 'video', 'pdf', 'document'] as ProjectMediaType[]
+            ).map((t) => ({ value: t, label: MEDIA_TYPE_LABELS[t] }))}
+          />
+        </div>
+        <Button type="button" variant="secondary" onClick={addDriveLink}>
+          Add Drive link
+        </Button>
+      </div>
+
       {error ? <p className="text-xs text-red-500">{error}</p> : null}
 
       {sorted.length === 0 ? (
@@ -145,7 +220,7 @@ export function ProjectMediaManager({
       ) : (
         <ul className="space-y-3">
           {sorted.map((item, index) => {
-            const src = resolveMediaUrl(item.url)
+            const src = resolveMediaUrl(item.url, item.type)
             const isCover = src && resolveMediaUrl(coverUrl) === src
             return (
               <li
