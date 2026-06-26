@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { TypingText } from '@/components/ui/TypingText'
 import { HERO_DISPLAY_NAME, HERO_TITLE } from '@/config/siteBrand'
 import { techOrbit } from '@/data/profile'
+import { ProfilePhoto } from '@/components/ui/ProfilePhoto'
 import { useProfile, useProfileImage } from '@/context/ProfileContext'
 
 export function Hero() {
@@ -132,7 +133,7 @@ export function Hero() {
             >
               <div className="rounded-full bg-gradient-to-br from-primary to-violet-600 p-1.5 shadow-2xl shadow-primary/40">
                 {profileImage ? (
-                  <img
+                  <ProfilePhoto
                     src={profileImage}
                     alt={HERO_DISPLAY_NAME}
                     className="h-44 w-44 rounded-full object-cover sm:h-52 sm:w-52"

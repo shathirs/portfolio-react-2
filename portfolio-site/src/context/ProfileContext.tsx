@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { defaultProfile } from '@/config/defaultProfile'
 import { api } from '@/lib/api'
 import { resolveProfileImageUrl } from '@/lib/profileImage'
 import type { SiteProfile } from '@/types/profile'
@@ -19,7 +20,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     api
       .getProfile()
       .then(setProfile)
-      .catch(() => setProfile(null))
+      .catch(() => setProfile(defaultProfile))
   }, [])
 
   const value = useMemo(() => profile, [profile])

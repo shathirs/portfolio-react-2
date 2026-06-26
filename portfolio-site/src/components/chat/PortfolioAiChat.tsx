@@ -3,6 +3,7 @@ import {
   AI_ASSISTANT_GREETING,
   AI_ASSISTANT_NAME,
 } from '@/config/siteBrand'
+import { ProfilePhoto } from '@/components/ui/ProfilePhoto'
 import { useProfileImage } from '@/context/ProfileContext'
 import { api } from '@/lib/api'
 import type { ChatMessage } from '@/types/chat'
@@ -184,7 +185,7 @@ export function PortfolioAiChat() {
                       </div>
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/10 text-slate-300">
                         {profileImage ? (
-                          <img
+                          <ProfilePhoto
                             src={profileImage}
                             alt=""
                             className="h-full w-full object-cover"
